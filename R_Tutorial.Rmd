@@ -1,0 +1,154 @@
+```{r}
+# 2.1: The scatter plot matrix in Figure 2.3 displays pairwise relationships between four features: Sepal Length, Sepal Width, Petal Length, and Petal Width, for three different flower species (indicated by the three colors of points). 
+
+# Observations include: Petal Length and Petal Width show a strong positive correlation, with the species forming distinct clusters. Sepal Length and Petal Length also exhibit a positive correlation, though with more overlap between species. Sepal Width shows less distinct separation between species and weaker correlations with other features. Overall, Petal Length and Petal Width appear to be the most useful features for distinguishing between the three flower species in this dataset.
+
+#2.2
+
+data(mtcars)
+
+mtcars$cyl <- as.factor(mtcars$cyl)
+
+point_symbols <- c(1, 2, 3) # Different symbols (e.g., circle, triangle, plus)
+point_colors <- c("red", "green", "blue") # Different colors
+
+pairs(~ mpg + disp + hp + drat + wt + qsec,
+      data = mtcars,
+      pch = as.numeric(mtcars$cyl), # Use numeric representation of cyl for symbols
+      col = point_colors[as.numeric(mtcars$cyl)], # Assign colors based on cyl
+      main = "Scatter Plot Matrix of mtcars Data by Number of Cylinders",
+      labels = c("MPG", "Displacement", "HP", "Rear Axle Ratio", "Weight", "1/4 Mile Time"))
+
+
+legend("topright", legend = levels(mtcars$cyl), pch = point_symbols, col = point_colors,  title = "Number of Cylinders")
+       
+#2.3: Based on a typical star plot visualization of three iris species (setosa, versicolor, virginica), my overall impression is that setosa exhibits the most distinct characteristics. Its star plot would likely show shorter petal lengths and widths but potentially longer sepal lengths and widths compared to the other two. Versicolor and virginica appear more similar, with their star shapes showing intermediate to longer petal and sepal dimensions, respectively. The degree of overlap in their star plot profiles suggests that they are more closely related in terms of these measured features than either is to setosa.
+
+#2,4
+
+install.packages("tidyr")
+
+library(ggplot2)
+library(tidyr)
+
+data(state.x77)
+df.state <- as.data.frame(state.x77)
+
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+df.state.scaled <- as.data.frame(lapply(df.state, normalize))
+
+df.state.scaled$State <- rownames(df.state)
+
+df.state_long <- df.state.scaled %>%
+  pivot_longer(cols = -State, names_to = "Variable", values_to = "Value")
+
+variable_colors <- c("Population" = "blue",
+                     "Income" = "green",
+                     "Illiteracy" = "red",
+                     "Life.Exp" = "purple",
+                     "Murder" = "orange",
+                     "HS.Grad" = "yellow",
+                     "Frost" = "cyan")
+
+ggplot(df.state_long, aes(x = State, y = Value, fill = Variable)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = variable_colors) +
+  labs(title = "Segment Diagram of US State Data",
+       x = "State",
+       y = "Normalized Value",
+       fill = "Variable") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        legend.position = "bottom")
+
+
+#2.5
+
+library(ggplot2)
+
+data(iris)
+
+ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species, shape = Species)) +
+  geom_point(size = 3) +  # Add scatter plot points with a size of 3
+  geom_smooth(method = "lm", se = FALSE, color = "black") + # Add a linear trend line (lm) without standard error (se)
+  labs(title = "Sepal Length vs. Sepal Width by Species",
+       x = "Sepal Length (cm)",
+       y = "Sepal Width (cm)",
+       color = "Species",
+       shape = "Species") +
+  theme_minimal() +  # Use a minimal theme for a clean look
+  theme(legend.position = "bottom") # Move the legend to the bottom
+
+#2.6
+
+boxplot_petal_width <- ggplot(iris, aes(x = Species, y = Petal.Width, fill = Species)) +
+  geom_boxplot() +
+  labs(title = "Box Plot of Petal Width by Iris Species",
+       x = "Species",
+       y = "Petal Width (cm)",
+       fill = "Species") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# Print the box plot
+print(boxplot_petal_width)
+
+# Create a density plot of Petal.Width by Species
+density_petal_width <- ggplot(iris, aes(x = Petal.Width, fill = Species, color = Species)) +
+  geom_density(alpha = 0.5) + # alpha controls transparency
+  labs(title = "Density Plot of Petal Width by Iris Species",
+       x = "Petal Width (cm)",
+       y = "Density",
+       fill = "Species",
+       color = "Species") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# Print the density plot
+print(density_petal_width)
+
+#2.7
+
+data(state.x77)
+df.state <- as.data.frame(state.x77)
+
+# Add the state region information
+state.info <- data.frame(state.name, state.region)
+df.state <- merge(df.state, state.info, by.x = "row.names", by.y = "state.name")
+colnames(df.state)[1] <- "State" # Rename the row names column
+
+# Perform PCA with scaling
+pca_result <- prcomp(df.state[, 2:8], scale. = TRUE) # Scale the numeric variables
+
+# Create a data frame for the PCA results
+pca_df <- as.data.frame(pca_result$x)
+pca_df$State <- df.state$State
+pca_df$Region <- df.state$state.region
+
+# Calculate the percentage of variance explained by each principal component
+variance_explained <- pca_result$sdev^2 / sum(pca_result$sdev^2)
+percent_explained <- round(100 * variance_explained, 2)
+
+# Create the PCA plot
+pca_plot <- ggplot(pca_df, aes(x = PC1, y = PC2, color = Region, label = State)) +
+  geom_point(size = 3) +
+  geom_text(hjust = -0.1, vjust = 0.1, size = 3) + # Add state labels
+  labs(title = "PCA of US State Data",
+       subtitle = paste0("PC1 (", percent_explained[1], "% variance), PC2 (", percent_explained[2], "% variance)"),
+       x = "Principal Component 1",
+       y = "Principal Component 2",
+       color = "Region") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# Print the PCA plot
+print(pca_plot)
+
+#2.8: Based on the various visualizations and analyses we've conducted on the iris dataset, the three species are primarily distinguished by their petal measurements. Setosa consistently exhibits shorter and narrower petals compared to versicolor and virginica. While there's some overlap between the sepal measurements of all three species, petal length and width provide a clearer separation in scatter plots, box plots, and density plots. The PCA also likely showed a separation of setosa from the other two along the principal components, driven by these petal characteristics. Examining the raw data confirms this trend: setosa generally has petal lengths ranging from 1.0 to 1.9 cm and widths from 0.1 to 0.6 cm, whereas versicolor and virginica have considerably larger petal dimensions.
+
+#Now, considering a flower with sepals of 6.5cm long and 3.0cm wide, petals of 6.2cm long, and 2.2cm wide, it most likely belongs to the Virginica species. The given petal length (6.2cm) and width (2.2cm) are significantly larger than what is typically observed in setosa. While the sepal dimensions (6.5cm long, 3.0cm wide) fall within the overlapping range of versicolor and virginica, the large petal measurements strongly align with the characteristics we've seen for the virginica species in our analyses. Virginica tends to have petal lengths ranging from 4.5 to 6.9 cm and widths from 1.4 to 2.5 cm, encompassing the provided measurements. Versicolor, on the other hand, generally has shorter and narrower petals (length 3.0-5.1 cm, width 1.0-1.8 cm), making the given flower's petal dimensions less likely for that species.
+
+```
+
